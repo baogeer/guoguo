@@ -123,7 +123,7 @@ def blank_fill_items(max_num):
 
 def fill_op_items(max_num):
     """
-    填符号题库：a ○ b = c，学生填 + 或 −。
+    填符号题库：a ◯ b = c，学生填 + 或 −。
       - a, b, c ∈ [0, max_num]
       - 排除 b == 0（+0 和 −0 都成立，无唯一解）
     返回 [(key, (a, op, b, c)), ...]，key 保留原始顺序以允许 2+3 与 3+2 同时出现。

@@ -53,7 +53,7 @@ def add_blank_fill_question(para, op, a, b, c, blank_pos, blank='(　)'):
 # ── 填符号（照片中的题型）───────────────────────────────
 
 def add_fill_op_question(para, a, b, c):
-    """a ○ b = c，学生在 ◯ 里填 + 或 −。"""
+    """a ◯ b = c，学生在 ◯ 里填 + 或 −。"""
     run = para.add_run(f"{a} ")
     run.font.size = Pt(13)
     _set_east_asia(run)

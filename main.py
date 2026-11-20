@@ -1,10 +1,10 @@
 """guoguo — 小学数学练习题生成器
 
-修改下方 TASKS，运行 python main.py，生成一个「一页」的综合 PDF，
-按顺序把 TASKS 里的所有题型都放到同一张纸上。
+修改下方 TASKS 和 __main__ 里的 sets，运行 python main.py，
+生成一份 PDF，里面包含 sets 套完全独立的练习（每套一页，题目各自随机）。
 
 TASKS 里的 `题数` 是「推荐值」：
-  - 题型多时，程序会自动减少每块题数以保证一页；
+  - 题型多时，程序会自动减少每块题数以保证单套一页装得下；
   - 题型少、页面有空余时，程序会自动增加题数填满页面；
   - 每块至少保留 1 行，不会超过题库容量或页面上限。
 """
@@ -34,10 +34,9 @@ from guoguo.generators import (adjacent_items, blank_fill_items,
 # ============================================================
 #
 # 格式：('题型', 推荐题数, max_num)
-#   推荐题数：这一块想出的题数（程序会根据页面空间自动增减，保证一页）。
+#   推荐题数：这一块想出的题数（程序会根据页面空间自动增减，
+#            保证单套一页装得下）。
 #   max_num ：数字范围上限，例如 max_num=10 表示所有数字和结果都在 [0, 10]。
-#
-# 一次运行只生成一个 PDF、一页。
 # ============================================================
 
 TASKS = [
@@ -125,22 +124,24 @@ def _row_caps(sections, budget_cm, fixed_total_cm):
     return caps
 
 
-def _render(sections, rows):
-    """按给定的行数渲染整页：每块按 rows[i] × cols 填满，返回 (doc, 题数列表)。"""
+def _render(sections, rows, sets=1):
+    """渲染整篇文档：按 rows 把 TASKS 重复 sets 套，每套一页，题目各自随机。"""
     doc = setup_document()
-    add_page_header(doc, '一年级数学综合练习')
-
-    counts = []
-    for i, s in enumerate(sections):
-        n_rows = rows[i]
-        count = n_rows * s['cols']
-        if i:
-            add_spacer(doc)
-        label = SECTION_LABELS[i] if i < len(SECTION_LABELS) else str(i + 1)
-        add_section_title(doc, f'{label}、{s["zh"]}')
-        n = s['module'].add_section(doc, count=count,
+    for s_idx in range(sets):
+        add_page_header(doc, '一年级数学综合练习',
+                        page_break_before=(s_idx > 0))
+        for i, s in enumerate(sections):
+            n_rows = rows[i]
+            count = n_rows * s['cols']
+            if i:
+                add_spacer(doc)
+            label = SECTION_LABELS[i] if i < len(SECTION_LABELS) else str(i + 1)
+            add_section_title(doc, f'{label}、{s["zh"]}')
+            s['module'].add_section(doc, count=count,
                                     max_num=s['max_num'], rows=n_rows)
-        counts.append(n)
+
+    # 回传第一套的实际题数，用于打印统计（每套结构相同）
+    counts = [rows[i] * s['cols'] for i, s in enumerate(sections)]
     return doc, counts
 
 
@@ -179,7 +180,9 @@ def _grow(rows, caps, render_and_count):
             break
 
 
-def main():
+def main(sets=1):
+    sets = max(1, int(sets))
+
     sections = _resolve(TASKS)
     if not sections:
         print('TASKS 里没有可生成的题目。')
@@ -200,15 +203,15 @@ def main():
 
     tmp_pdf = os.path.join(tempfile.gettempdir(), 'guoguo_attempt.pdf')
 
+    # 布局阶段只渲染一套测页数（整篇排版和单套一致），确定了行数再铺满 sets 套
     def render_and_count(rs):
-        doc_try, _ = _render(sections, list(rs))
+        doc_try, _ = _render(sections, list(rs), sets=1)
         return save_as_pdf(doc_try, tmp_pdf)
 
-    # 先渲染一次；超页就从最大块削行到 ≤ 1 页。
-    counts = None
+    # 先按单套渲染一次；超页就从最大块削行到 ≤ 1 页。
     pages = None
     for _ in range(50):
-        doc, counts = _render(sections, rows)
+        doc, _ = _render(sections, rows, sets=1)
         pages = save_as_pdf(doc, tmp_pdf)
         if pages <= 1:
             break
@@ -219,19 +222,22 @@ def main():
     # 不超页：尝试均匀加行填满页面（遇翻页自动回退），用上限 caps 约束。
     if pages <= 1:
         _grow(rows, list(caps), render_and_count)
-        doc, counts = _render(sections, rows)
-        pages = save_as_pdf(doc, tmp_pdf)
+
+    # 用确定好的行数一次性渲染 sets 套
+    doc, counts = _render(sections, rows, sets=sets)
+    pages = save_as_pdf(doc, tmp_pdf)
 
     names = '+'.join(s['zh'] for s in sections)
-    total = sum(counts)
-    filename = f'综合练习_{names}_共{total}题.pdf'
+    per_set = sum(counts)
+    total = per_set * sets
+    filename = f'综合练习_{names}_{sets}套共{total}题.pdf'
     shutil.move(tmp_pdf, filename)
 
-    print(f'已生成 {pages} 页 PDF：{filename}')
-    if pages > 1:
-        print('警告：即使把每块都压到最少行数仍超过一页，'
+    print(f'已生成 {pages} 页 PDF（{sets} 套 × 每套 {per_set} 题）：{filename}')
+    if pages > sets:
+        print(f'警告：实测 {pages} 页 > 预期 {sets} 页，单套可能装不下，'
               '请减少 TASKS 里的题型数量或调小 max_num。')
-    print(f'共 {total} 道题，分 {len(sections)} 块：')
+    print(f'每套 {per_set} 道题，分 {len(sections)} 块：')
     width = max(len(s['zh']) for s in sections)
     for i, (s, n, r) in enumerate(zip(sections, counts, rows)):
         label = SECTION_LABELS[i] if i < len(SECTION_LABELS) else str(i + 1)
@@ -240,4 +246,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    sets = 6
+    main(sets)
