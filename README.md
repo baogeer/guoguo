@@ -1,6 +1,10 @@
-# guoguo — 小学数学练习题生成器
+# 小学练习题生成器
 
-自动生成小学一年级数学练习题 PDF。一次运行按 `TASKS` 列表顺序把多个题型拼成「一套练习」（单页），再按 `main.py` 底部的 `sets` 变量重复生成 N 套，每套题目独立随机，输出到同一个 PDF。
+自动生成小学一年级练习题 PDF（当前已实现数学部分，语文规划中）。一次运行按 `TASKS` 列表顺序把多个题型拼成「一套练习」（单页），再按 `main_math.py` 底部的 `sets` 变量重复生成 N 套，每套题目独立随机，输出到同一个 PDF。
+
+> 项目分学科：数学题的生成代码在 `src/math/`，入口是 `main_math.py`。
+> 未来的语文题会放在 `src/chinese/`，走独立入口 `main_chinese.py`，
+> 两者共享 `src/core.py` 的排版/PDF 工具。
 
 ## 题型一览
 
@@ -31,10 +35,10 @@ pip install python-docx pywin32
 
 ## 使用方法
 
-打开 `main.py`，编辑 `TASKS` 列表和底部的 `sets` 变量，然后运行：
+打开 `main_math.py`，编辑 `TASKS` 列表和底部的 `sets` 变量，然后运行：
 
 ```bash
-python main.py
+python main_math.py
 ```
 
 ### TASKS 格式
@@ -56,7 +60,7 @@ TASKS = [
 
 ### 控制套数
 
-在 `main.py` 底部：
+在 `main_math.py` 底部：
 
 ```python
 if __name__ == '__main__':
@@ -93,42 +97,59 @@ PDF 文件生成在当前目录，文件名按内容自动生成，形如：
 ## 项目结构
 
 ```
-guoguo/
-├── main.py                     # 入口：改 TASKS 和 sets，运行即可
+./
+├── main_math.py                   # 数学入口：改 TASKS 和 sets，运行即可
+├── main_chinese.py                # 语文入口（规划中）
 ├── README.md
-└── src/guoguo/
+└── src/
     ├── __init__.py
-    ├── core.py                 # 文档设置、去重填充、PDF 转换、行数分配
-    ├── generators.py           # 各题型枚举算法（xxx_items）
-    ├── renderers.py            # Word 单元格渲染（add_xxx_question）
-    ├── adjacent.py             # 相邻数
-    ├── blank_fill.py           # 括号填空
-    ├── chain_add.py            # 连加
-    ├── chain_sub.py            # 连减
-    ├── chain_mix.py            # 连加连减混合
-    ├── compare.py              # 比大小（两个算式比大小）
-    └── fill_op.py              # 填符号（a ◯ b = c，填 + / −）
+    ├── core.py                    # 共享：文档设置、去重填充、PDF 转换、行数分配
+    ├── math/                      # 数学题生成（独立于语文）
+    │   ├── __init__.py
+    │   ├── generators.py          # 各题型枚举算法（xxx_items）
+    │   ├── renderers.py           # Word 单元格渲染（add_xxx_question）
+    │   ├── adjacent.py            # 相邻数
+    │   ├── blank_fill.py          # 括号填空
+    │   ├── chain_add.py           # 连加
+    │   ├── chain_sub.py           # 连减
+    │   ├── chain_mix.py           # 连加连减混合
+    │   ├── compare.py             # 比大小
+    │   └── fill_op.py             # 填符号（a ◯ b = c，填 + / −）
+    └── chinese/                   # 语文题（与 math 并列）
+        ├── __init__.py
+        ├── learned.md             # 已学知识点总览
+        ├── pinyin_images/         # 拼音源图（只读，一般不动）
+        └── pinyin_notes/          # 从源图提取并经核验的拼音知识点
 ```
 
-每个题型模块都提供统一接口：
+- **排版共享**：`core.py` 不区分学科，数学和语文都用同一套 Document/表格/PDF 工具。
+- **生成隔离**：`math/` 和 `chinese/` 各管各的题库和渲染，不交叉引用。
+
+每个数学题型模块都提供统一接口：
 
 ```python
 module.add_section(doc, count, max_num, rows=None)
 ```
 
-`main.py` 遍历 `TASKS` 调用它们，拼到同一个 Document 再转 PDF。每个模块还有一个 `save()` 函数，可作为独立脚本直接生成只含该题型的 PDF。
+`main_math.py` 遍历 `TASKS` 调用它们，拼到同一个 Document 再转 PDF。每个模块还有一个 `save()` 函数，可作为独立脚本直接生成只含该题型的 PDF。
 
 ## 自定义
 
-### 添加新题型
+### 添加新数学题型
 
-1. 在 `generators.py` 增加 `xxx_items(max_num)`，返回 `[(key, data), ...]`
+1. 在 `src/math/generators.py` 增加 `xxx_items(max_num)`，返回 `[(key, data), ...]`
    - `key` 用于相邻去重（把交换律等价的归一化）
-2. 在 `renderers.py` 增加 `add_xxx_question(para, ...)`，把一道题写入段落
-3. 新建 `src/guoguo/xxx.py`，参考 `chain_add.py`：
+2. 在 `src/math/renderers.py` 增加 `add_xxx_question(para, ...)`，把一道题写入段落
+3. 在 `src/math/` 新建 `xxx.py`，参考 `chain_add.py`：
    - 定义 `IDEAL_COLS` 和 `ROW_HEIGHT_CM`
    - 实现 `add_section(doc, count, max_num, rows=None)`
-4. 在 `main.py` 的 `SHEETS` 字典注册
+4. 在 `main_math.py` 的 `SHEETS` 字典注册
+
+### 添加语文题（规划中）
+
+对应放到 `src/chinese/`，自己写 `generators.py` / `renderers.py` / 各题型模块，
+入口是另起一个 `main_chinese.py`。不要跨学科 import 生成代码；排版工具统一从
+`src.core` 取。
 
 ### 调整密度
 
@@ -139,5 +160,5 @@ module.add_section(doc, count, max_num, rows=None)
 ## 设计要点
 
 - **相邻去重**：`core.fill_cells(rows, cols, items_for)` 利用 `key` 判断左邻/上邻是否重复，重复就从后面交换一个来
-- **自动布局**：`core.allocate_rows()` 按总高度和各题型行高分配行数；`main._shave` / `_grow` 再用 Word 实测页数兜底，收紧或填满
+- **自动布局**：`core.allocate_rows()` 按总高度和各题型行高分配行数；`main_math._shave` / `_grow` 再用 Word 实测页数兜底，收紧或填满
 - **PDF 生成**：先用 python-docx 写 .docx，再通过 Word COM 转 PDF（Windows-only）

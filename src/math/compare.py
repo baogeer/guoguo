@@ -5,8 +5,8 @@
     10 − 7 ◯ 1 + 2
 """
 
-from .core import (setup_document, save_as_pdf, grid_layout,
-                   add_standalone_header, add_question_table)
+from ..core import (setup_document, save_as_pdf, grid_layout,
+                    add_standalone_header, add_question_table)
 from .generators import compare_expr_items
 from .renderers import add_compare_question
 

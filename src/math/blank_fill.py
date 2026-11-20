@@ -4,8 +4,8 @@
     ( ) + 3 = 7     9 − ( ) = 3
 """
 
-from .core import (setup_document, save_as_pdf, grid_layout,
-                   add_standalone_header, add_question_table)
+from ..core import (setup_document, save_as_pdf, grid_layout,
+                    add_standalone_header, add_question_table)
 from .generators import blank_fill_items
 from .renderers import add_blank_fill_question
 

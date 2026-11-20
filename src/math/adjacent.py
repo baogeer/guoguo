@@ -4,9 +4,9 @@ from docx.shared import Cm
 from docx.enum.table import (WD_TABLE_ALIGNMENT, WD_ROW_HEIGHT_RULE,
                              WD_CELL_VERTICAL_ALIGNMENT)
 
-from .core import (setup_document, fill_cells, set_table_cell_margins_zero,
-                   hide_table_borders, lock_table_layout,
-                   add_page_header, save_as_pdf, grid_layout)
+from ..core import (setup_document, fill_cells, set_table_cell_margins_zero,
+                    hide_table_borders, lock_table_layout,
+                    add_page_header, save_as_pdf, grid_layout)
 from .generators import adjacent_items
 from .renderers import write_adjacent_to_cell
 

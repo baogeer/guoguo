@@ -1,32 +1,31 @@
-"""guoguo — 小学数学练习题生成器
+"""小学数学练习题生成器。
 
-修改下方 TASKS 和 __main__ 里的 sets，运行 python main.py，
-生成一份 PDF，里面包含 sets 套完全独立的练习（每套一页，题目各自随机）。
+修改下方 TASKS 和 __main__ 里的 sets，运行 python main_math.py，
+生成一份 PDF，里面包含 sets 套完全独立的数学练习（每套一页，题目各自随机）。
 
 TASKS 里的 `题数` 是「推荐值」：
   - 题型多时，程序会自动减少每块题数以保证单套一页装得下；
   - 题型少、页面有空余时，程序会自动增加题数填满页面；
   - 每块至少保留 1 行，不会超过题库容量或页面上限。
+
+语文题的入口请看 main_chinese.py（规划中）。生成逻辑分别放在
+src/math/ 和 src/chinese/，共享 src/core.py 的排版工具。
 """
 
 import os
 import shutil
-import sys
 import tempfile
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
-
-from guoguo import (adjacent, blank_fill, chain_add, chain_sub, chain_mix,
-                    compare, fill_op)
-from guoguo.core import (setup_document, save_as_pdf, add_page_header,
-                         add_section_title, add_spacer, grid_layout,
-                         page_budget_cm, allocate_rows,
-                         SECTION_TITLE_CM, SPACER_CM)
-from guoguo.generators import (adjacent_items, blank_fill_items,
-                               chain_add_items, chain_sub_items,
-                               chain_mix_items, compare_expr_items,
-                               fill_op_items)
+from src.math import (adjacent, blank_fill, chain_add, chain_sub, chain_mix,
+                      compare, fill_op)
+from src.core import (setup_document, save_as_pdf, add_page_header,
+                      add_section_title, add_spacer, grid_layout,
+                      page_budget_cm, allocate_rows,
+                      SECTION_TITLE_CM, SPACER_CM)
+from src.math.generators import (adjacent_items, blank_fill_items,
+                                 chain_add_items, chain_sub_items,
+                                 chain_mix_items, compare_expr_items,
+                                 fill_op_items)
 
 
 # ============================================================
@@ -130,18 +129,18 @@ def _render(sections, rows, sets=1):
     for s_idx in range(sets):
         add_page_header(doc, '一年级数学综合练习',
                         page_break_before=(s_idx > 0))
-        for i, s in enumerate(sections):
+        for i, sec in enumerate(sections):
             n_rows = rows[i]
-            count = n_rows * s['cols']
+            count = n_rows * sec['cols']
             if i:
                 add_spacer(doc)
             label = SECTION_LABELS[i] if i < len(SECTION_LABELS) else str(i + 1)
-            add_section_title(doc, f'{label}、{s["zh"]}')
-            s['module'].add_section(doc, count=count,
-                                    max_num=s['max_num'], rows=n_rows)
+            add_section_title(doc, f'{label}、{sec["zh"]}')
+            sec['module'].add_section(doc, count=count,
+                                      max_num=sec['max_num'], rows=n_rows)
 
     # 回传第一套的实际题数，用于打印统计（每套结构相同）
-    counts = [rows[i] * s['cols'] for i, s in enumerate(sections)]
+    counts = [rows[i] * sec['cols'] for i, sec in enumerate(sections)]
     return doc, counts
 
 
@@ -201,7 +200,7 @@ def main(sets=1):
     desired = [min(d, c) for d, c in zip(desired, caps)]
     rows = allocate_rows(desired, heights, fixed, budget, max_rows=caps)
 
-    tmp_pdf = os.path.join(tempfile.gettempdir(), 'guoguo_attempt.pdf')
+    tmp_pdf = os.path.join(tempfile.gettempdir(), 'math_attempt.pdf')
 
     # 布局阶段只渲染一套测页数（整篇排版和单套一致），确定了行数再铺满 sets 套
     def render_and_count(rs):

@@ -5,8 +5,8 @@
 学生在 ◯ 里填 + 或 −。
 """
 
-from .core import (setup_document, save_as_pdf, grid_layout,
-                   add_standalone_header, add_question_table)
+from ..core import (setup_document, save_as_pdf, grid_layout,
+                    add_standalone_header, add_question_table)
 from .generators import fill_op_items
 from .renderers import add_fill_op_question
 

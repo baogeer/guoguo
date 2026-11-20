@@ -2,7 +2,7 @@
 
 import random
 
-from .core import MIN_NUM
+from ..core import MIN_NUM
 
 
 def add_sub_items(max_num):
