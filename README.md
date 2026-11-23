@@ -1,12 +1,12 @@
 # 小学练习题生成器
 
-自动生成小学一年级练习题 PDF（当前已实现数学部分，语文规划中）。一次运行按 `TASKS` 列表顺序把多个题型拼成「一套练习」（单页），再按 `main_math.py` 底部的 `sets` 变量重复生成 N 套，每套题目独立随机，输出到同一个 PDF。
+自动生成小学一年级练习题 PDF，支持数学。一次运行按 `TASKS` 列表顺序把多个题型拼成「一套练习」（单页），再按入口文件底部的 `sets` 变量重复生成 N 套，每套题目独立随机，输出到同一个 PDF。
 
-> 项目分学科：数学题的生成代码在 `src/math/`，入口是 `main_math.py`。
-> 未来的语文题会放在 `src/chinese/`，走独立入口 `main_chinese.py`，
-> 两者共享 `src/core.py` 的排版/PDF 工具。
+> 数学题的生成代码在 `src/math/`，入口是 `main_math.py`。
 
 ## 题型一览
+
+### 数学（`main_math.py`）
 
 | 命令名 | 题型 | 题目示例 | 默认布局 |
 |--------|------|----------|----------|
@@ -18,7 +18,7 @@
 | `compare` | 比大小 | `3 + 3 ◯ 3 + 2`、`10 − 7 ◯ 1 + 2` | 4 列 |
 | `adjacent` | 相邻数 | `（ ）4（ ）`、`1（ ）3` | 4 列 |
 
-所有题目：
+所有数学题：
 - 最终结果和中间结果都在 `[0, max_num]` 范围内
 - 相邻单元格（上下、左右）不会出现同一道题
 - 每次运行随机出题
@@ -35,7 +35,9 @@ pip install python-docx pywin32
 
 ## 使用方法
 
-打开 `main_math.py`，编辑 `TASKS` 列表和底部的 `sets` 变量，然后运行：
+### 数学
+
+打开 `main_math.py`，编辑 `TASKS` 列表和底部的 `sets` 变量，然后：
 
 ```bash
 python main_math.py
@@ -99,31 +101,22 @@ PDF 文件生成在当前目录，文件名按内容自动生成，形如：
 ```
 ./
 ├── main_math.py                   # 数学入口：改 TASKS 和 sets，运行即可
-├── main_chinese.py                # 语文入口（规划中）
 ├── README.md
 └── src/
     ├── __init__.py
     ├── core.py                    # 共享：文档设置、去重填充、PDF 转换、行数分配
-    ├── math/                      # 数学题生成（独立于语文）
-    │   ├── __init__.py
-    │   ├── generators.py          # 各题型枚举算法（xxx_items）
-    │   ├── renderers.py           # Word 单元格渲染（add_xxx_question）
-    │   ├── adjacent.py            # 相邻数
-    │   ├── blank_fill.py          # 括号填空
-    │   ├── chain_add.py           # 连加
-    │   ├── chain_sub.py           # 连减
-    │   ├── chain_mix.py           # 连加连减混合
-    │   ├── compare.py             # 比大小
-    │   └── fill_op.py             # 填符号（a ◯ b = c，填 + / −）
-    └── chinese/                   # 语文题（与 math 并列）
+    └── math/                      # 数学题生成
         ├── __init__.py
-        ├── learned.md             # 已学知识点总览
-        ├── pinyin_images/         # 拼音源图（只读，一般不动）
-        └── pinyin_notes/          # 从源图提取并经核验的拼音知识点
+        ├── generators.py          # 各题型枚举算法（xxx_items）
+        ├── renderers.py           # Word 单元格渲染（add_xxx_question）
+        ├── adjacent.py            # 相邻数
+        ├── blank_fill.py          # 括号填空
+        ├── chain_add.py           # 连加
+        ├── chain_sub.py           # 连减
+        ├── chain_mix.py           # 连加连减混合
+        ├── compare.py             # 比大小
+        └── fill_op.py             # 填符号（a ◯ b = c，填 + / −）
 ```
-
-- **排版共享**：`core.py` 不区分学科，数学和语文都用同一套 Document/表格/PDF 工具。
-- **生成隔离**：`math/` 和 `chinese/` 各管各的题库和渲染，不交叉引用。
 
 每个数学题型模块都提供统一接口：
 
@@ -144,12 +137,6 @@ module.add_section(doc, count, max_num, rows=None)
    - 定义 `IDEAL_COLS` 和 `ROW_HEIGHT_CM`
    - 实现 `add_section(doc, count, max_num, rows=None)`
 4. 在 `main_math.py` 的 `SHEETS` 字典注册
-
-### 添加语文题（规划中）
-
-对应放到 `src/chinese/`，自己写 `generators.py` / `renderers.py` / 各题型模块，
-入口是另起一个 `main_chinese.py`。不要跨学科 import 生成代码；排版工具统一从
-`src.core` 取。
 
 ### 调整密度
 
