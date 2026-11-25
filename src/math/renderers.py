@@ -1,8 +1,8 @@
 """题目渲染：将题目数据写入 Word 单元格/段落。"""
 
 from docx.shared import Pt, RGBColor
-from docx.oxml.ns import qn
-from docx.oxml import OxmlElement
+from docx.oxml.ns import qn, nsdecls
+from docx.oxml import OxmlElement, parse_xml
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
@@ -161,3 +161,110 @@ def write_compose_tree(cell, p1, p2):
         "   \\ /   ",
         "  (   )  ",
     ])
+
+
+# ── 应用题 ───────────────────────────────────────────────
+
+def _ruby_xml(char, pinyin, hanzi_pt=11, pinyin_pt=5):
+    """生成一个 <w:r><w:ruby>...</w:ruby></w:r> 元素（汉字上标拼音）。"""
+    hps = int(hanzi_pt * 2)   # half-point size
+    pps = int(pinyin_pt * 2)
+    ns = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    xml = (
+        f'<w:r {ns}>'
+        f'<w:ruby>'
+        f'<w:rubyPr>'
+        f'<w:rubyAlign w:val="center"/>'
+        f'<w:hps w:val="{pps}"/>'
+        f'<w:hpsRaise w:val="{hps}"/>'
+        f'<w:hpsBaseText w:val="{hps}"/>'
+        f'<w:lid w:val="zh-CN"/>'
+        f'</w:rubyPr>'
+        f'<w:rt>'
+        f'<w:r><w:rPr>'
+        f'<w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
+        f'<w:sz w:val="{pps}"/>'
+        f'</w:rPr>'
+        f'<w:t>{pinyin}</w:t></w:r>'
+        f'</w:rt>'
+        f'<w:rubyBase>'
+        f'<w:r><w:rPr>'
+        f'<w:rFonts w:eastAsia="宋体"/>'
+        f'<w:sz w:val="{hps}"/>'
+        f'</w:rPr>'
+        f'<w:t>{char}</w:t></w:r>'
+        f'</w:rubyBase>'
+        f'</w:ruby>'
+        f'</w:r>'
+    )
+    return parse_xml(xml)
+
+
+def _is_hanzi(ch):
+    return '一' <= ch <= '鿿'
+
+
+def _add_pinyin_text(paragraph, text, hanzi_pt=11, pinyin_pt=5):
+    """把一段中文文字加到 paragraph 里，汉字上方标拼音，非汉字直接写。"""
+    from pypinyin import lazy_pinyin, Style
+    from src.chinese.article import WORD_PINYIN as _WP
+
+    # 把文字切成 (汉字段, 非汉字段) 交替的 chunks
+    chunks = []
+    buf = ''
+    is_hz = None
+    for ch in text:
+        cur = _is_hanzi(ch)
+        if is_hz is not None and cur != is_hz:
+            chunks.append((is_hz, buf))
+            buf = ''
+        buf += ch
+        is_hz = cur
+    if buf:
+        chunks.append((is_hz, buf))
+
+    for hz, chunk in chunks:
+        if not hz:
+            run = paragraph.add_run(chunk)
+            run.font.size = Pt(hanzi_pt)
+            run.font.name = '宋体'
+            _set_east_asia(run, '宋体')
+        else:
+            # 对汉字段做最长词匹配拼音
+            pys = []
+            i = 0
+            while i < len(chunk):
+                matched = False
+                for L in range(min(6, len(chunk) - i), 1, -1):
+                    cand = chunk[i:i + L]
+                    if cand in _WP:
+                        parts = _WP[cand].split(' ')
+                        if len(parts) == L:
+                            pys.extend(zip(cand, parts))
+                            i += L
+                            matched = True
+                            break
+                if not matched:
+                    ch = chunk[i]
+                    py = lazy_pinyin(ch, style=Style.TONE)[0]
+                    pys.append((ch, py))
+                    i += 1
+            for ch, py in pys:
+                paragraph._p.append(_ruby_xml(ch, py, hanzi_pt, pinyin_pt))
+
+
+def add_word_problem_question(cell, text, op, a, b):
+    """把一道应用题写进单元格：带拼音的题目文字。"""
+    from .generators import _wp_fill_template
+
+    filled = _wp_fill_template(text, a, b)
+
+    for p in cell.paragraphs:
+        for r in p.runs:
+            r.text = ''
+
+    p = cell.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    p.paragraph_format.space_before = Pt(2)
+    p.paragraph_format.space_after = Pt(2)
+    _add_pinyin_text(p, filled, hanzi_pt=11, pinyin_pt=5)

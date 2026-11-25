@@ -239,3 +239,89 @@ def compose_tree_items(max_num):
                 seen.add(key)
                 items.append((key, ('com', a, b)))
     return items
+
+
+# ── 应用题 ───────────────────────────────────────────────
+
+_WP_NAMES = ['小明', '小红', '小华', '小丽', '东东', '花花',
+             '亮亮', '方方', '妈妈', '爸爸']
+
+_WP_ITEMS = [
+    ('个', '苹果'), ('把', '尺子'), ('本', '练习本'), ('支', '铅笔'),
+    ('只', '小鸟'), ('朵', '小花'), ('块', '橡皮'), ('颗', '糖果'),
+    ('串', '葡萄'), ('张', '贴纸'),
+]
+
+_WP_GET_VERBS = ['买了', '摘了', '捡了', '又拿了']
+_WP_LOSE_VERBS = ['送了', '吃了', '用了', '丢了']
+
+
+def word_problem_items(max_num):
+    """
+    生成应用题题库，返回 [(key, (text, op, a, b)), ...]。
+
+    text   — 题目文字（约 20~40 字）
+    op     — '+' 或 '-'
+    a, b   — 两个操作数
+    """
+    items = []
+    seen = set()
+
+    def _add(key, text, op, a, b):
+        if key in seen:
+            return
+        seen.add(key)
+        items.append((key, (text, op, a, b)))
+
+    for a in range(1, max_num + 1):
+        for b in range(1, max_num - a + 1):
+            # ── 加法：{人}有{a}个{物}，又{动}了{b}个，一共有多少个？
+            _add(('add-more', a, b),
+                 f'{{name}}有{{a}}{{}}{{}}，又{{get}}{{b}}{{}}{{}}，'
+                 f'{{name}}一共有多少{{}}{{}}？',
+                 '+', a, b)
+
+            # ── 加法：{人1}有{a}个{物}，{人2}有{b}个，一共有多少个？
+            _add(('add-together', a, b),
+                 f'{{name}}有{{a}}{{}}{{}}，{{name2}}有{{b}}{{}}{{}}，'
+                 f'他们一共有多少{{}}{{}}？',
+                 '+', a, b)
+
+    for a in range(1, max_num + 1):
+        for b in range(1, a + 1):
+            # ── 减法：{人}有{a}个{物}，{动}了{b}个，还剩多少个？
+            _add(('sub-lose', a, b),
+                 f'{{name}}有{{a}}{{}}{{}}，{{lose}}{{b}}{{}}{{}}，'
+                 f'还剩多少{{}}{{}}？',
+                 '-', a, b)
+
+            if a != b:
+                # ── 比较：{人1}有{a}个{物}，{人2}有{b}个，{人1}比{人2}多几个？
+                _add(('cmp-more', a, b),
+                     f'{{name}}有{{a}}{{}}{{}}，{{name2}}有{{b}}{{}}{{}}，'
+                     f'{{name}}比{{name2}}多几{{}}{{}}？',
+                     '-', a, b)
+
+    return items
+
+
+def _wp_fill_template(template, a, b):
+    """把带 {} 占位的应用题模板填上随机人名/物品/动词。"""
+    import random as _rnd
+    n1, n2 = _rnd.sample(_WP_NAMES, 2)
+    mw, item = _rnd.choice(_WP_ITEMS)
+    get_v = _rnd.choice(_WP_GET_VERBS)
+    lose_v = _rnd.choice(_WP_LOSE_VERBS)
+    return (template
+            .replace('{name}', n1, 1)
+            .replace('{name2}', n2, 1)
+            .replace('{name}', n1)       # 第三次出现
+            .replace('{name2}', n2)
+            .replace('{a}', str(a))
+            .replace('{b}', str(b))
+            .replace('{get}', get_v)
+            .replace('{lose}', lose_v)
+            .replace('{}', mw, 1).replace('{}', item, 1)
+            .replace('{}', mw, 1).replace('{}', item, 1)
+            .replace('{}', mw, 1).replace('{}', item, 1)
+            )

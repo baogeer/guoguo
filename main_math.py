@@ -17,7 +17,7 @@ import shutil
 import tempfile
 
 from src.math import (adjacent, blank_fill, chain_add, chain_sub, chain_mix,
-                      compare, fill_op)
+                      compare, fill_op, word_problem)
 from src.core import (setup_document, save_as_pdf, add_page_header,
                       add_section_title, add_spacer, grid_layout,
                       page_budget_cm, allocate_rows,
@@ -25,7 +25,7 @@ from src.core import (setup_document, save_as_pdf, add_page_header,
 from src.math.generators import (adjacent_items, blank_fill_items,
                                  chain_add_items, chain_sub_items,
                                  chain_mix_items, compare_expr_items,
-                                 fill_op_items)
+                                 fill_op_items, word_problem_items)
 
 
 # ============================================================
@@ -40,32 +40,30 @@ from src.math.generators import (adjacent_items, blank_fill_items,
 
 TASKS = [
     # 例：2 + 3 + 4 = ▢  ／  1 + 2 + 5 = ▢
-    # 4 列布局
     # ('chain-add',    20,   10),
 
     # 例：10 - 5 - 4 = ▢  ／  9 - 2 - 3 = ▢
-    # 4 列布局
     # ('chain-sub',    20,   10),
 
     # 例：2 + 5 - 4 = ▢  ／  7 - 2 + 2 = ▢
-    # 4 列布局
     ('chain-mix',    20,   10),
 
     # 例：（ ）4（ ） ／ 1（ ）3
-    # 4 列布局，max_num 建议 12
     # ('adjacent',     8,    12),
 
     # 例：( ) + 3 = 7  ／  9 - ( ) = 3
-    # 5 列布局
-    ('blank-fill',   15,   10),
+    # ('blank-fill',   15,   10),
 
     # 例：5 ◯ 2 = 7  ／  8 ◯ 7 = 1（填 + 或 −）
-    # 5 列布局
     # ('fill-op',      20,   10),
 
     # 例：3 + 3 ◯ 3 + 2  ／  10 - 7 ◯ 1 + 2
     # 4 列布局，在◯里填 >、< 或 =
     ('compare',      16,   10),
+
+    # 例：小明有 2 个苹果，又买了 3 个，一共有多少个苹果？
+    # 2 列布局，max_num 建议 10
+    ('word-problem', 6,    10),
 ]
 
 
@@ -74,13 +72,14 @@ TASKS = [
 # ============================================================
 
 SHEETS = {
-    'adjacent':   (adjacent,   '相邻数',       adjacent_items),
-    'blank-fill': (blank_fill, '括号填空',     blank_fill_items),
-    'chain-add':  (chain_add,  '连加',         chain_add_items),
-    'chain-sub':  (chain_sub,  '连减',         chain_sub_items),
-    'chain-mix':  (chain_mix,  '连加连减混合', chain_mix_items),
-    'compare':    (compare,    '比大小',       compare_expr_items),
-    'fill-op':    (fill_op,    '填符号',       fill_op_items),
+    'adjacent':      (adjacent,      '相邻数',       adjacent_items),
+    'blank-fill':    (blank_fill,    '括号填空',     blank_fill_items),
+    'chain-add':     (chain_add,     '连加',         chain_add_items),
+    'chain-sub':     (chain_sub,     '连减',         chain_sub_items),
+    'chain-mix':     (chain_mix,     '连加连减混合', chain_mix_items),
+    'compare':       (compare,       '比大小',       compare_expr_items),
+    'fill-op':       (fill_op,       '填符号',       fill_op_items),
+    'word-problem':  (word_problem,  '应用题',       word_problem_items),
 }
 
 SECTION_LABELS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
@@ -245,5 +244,5 @@ def main(sets=1):
 
 
 if __name__ == '__main__':
-    sets = 6
+    sets = 2
     main(sets)

@@ -11,3 +11,8 @@ build/
 *.spec
 venv/
 .venv/
+
+# 环境变量（API key 等机密）
+.env
+.env.local
+
