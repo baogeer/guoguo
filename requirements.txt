@@ -1,0 +1,16 @@
+# 小学练习题生成器运行依赖
+#
+# 安装：
+#   pip install -r requirements.txt
+#
+# 运行平台：Windows（pywin32 依赖 Microsoft Word COM）
+
+python-docx>=1.2.0      # 生成 .docx 文档
+pywin32>=306            # 通过 Word COM 把 .docx 转 PDF（core.docx_to_pdf）
+pypinyin>=0.55.0        # 给汉字自动标拼音兜底
+pymupdf>=1.24.0         # PDF 渲染/预览（import fitz）
+
+# AI 生成大班短文（main_chinese）
+agno>=3.2.0             # Agent 框架，调 DeepSeek
+openai>=1.50.0          # agno 底层依赖的 OpenAI 兼容 SDK
+python-dotenv>=1.0.0    # 读 .env 里的 DEEPSEEK_API_KEY
